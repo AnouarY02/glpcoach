@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
   try {
     if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.CheckoutSession;
+      const session = event.data.object as Stripe.Checkout.Session;
       const userId = session.client_reference_id;
 
       if (userId) {
