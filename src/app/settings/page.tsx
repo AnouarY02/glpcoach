@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, CheckCircle, Crown, AlertTriangle, ExternalLink } from "lucide-react";
@@ -23,7 +23,7 @@ const DAYS = [
   { value: 6, label: "Zaterdag" },
 ];
 
-export default function SettingsPage() {
+function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const upgraded = searchParams.get("upgraded") === "1";
@@ -381,5 +381,13 @@ export default function SettingsPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-green-500" /></div>}>
+      <SettingsContent />
+    </Suspense>
   );
 }
