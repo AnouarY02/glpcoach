@@ -13,7 +13,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { TrendingDown, Scale, Syringe, Flame, Loader2, Plus } from "lucide-react";
+import { TrendingDown, Scale, Syringe, Flame, Loader2 } from "lucide-react";
+import { WeightLogForm } from "@/components/WeightLogForm";
 
 interface WeightEntry {
   logged_at: string;
@@ -32,11 +33,6 @@ export default function ProgressPage() {
   const [startWeight, setStartWeight] = useState<number | null>(null);
   const [startDate, setStartDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Quick weight log
-  const [newWeight, setNewWeight] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -63,36 +59,32 @@ export default function ProgressPage() {
     load();
   }, []);
 
-  const handleLogWeight = async () => {
-    if (!newWeight || parseFloat(newWeight) <= 0) return;
-    setSaving(true);
-
-    try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      await supabase.from("weight_logs").insert({
-        user_id: user.id,
-        weight_kg: parseFloat(newWeight),
-      });
-
-      const { data: updated } = await supabase.from("weight_logs").select("logged_at, weight_kg")
-        .eq("user_id", user.id).order("logged_at", { ascending: true });
-      if (updated) setWeights(updated);
-
-      setNewWeight("");
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const currentWeight = weights[weights.length - 1]?.weight_kg;
   const totalLost = startWeight && currentWeight ? startWeight - currentWeight : null;
-  const weeksSinceStart = startDate ? Math.floor(differenceInDays(new Date(), new Date(startDate)) / 7) : null;
-  const streak = injections.length; // simplified: number of logged injections
+  const weeksSinceStart = startDate
+    ? Math.floor(differenceInDays(new Date(), new Date(startDate)) / 7)
+    : null;
+
+  // Streak: consecutive days that have any weight log entry (going back from today)
+  const streak = (() => {
+    if (weights.length === 0) return 0;
+    const uniqueDays = Array.from(
+      new Set(weights.map((w) => w.logged_at.split("T")[0]))
+    ).sort().reverse();
+    let count = 0;
+    let expected = new Date();
+    for (const day of uniqueDays) {
+      const dayDate = new Date(day);
+      const diff = differenceInDays(expected, dayDate);
+      if (diff <= 1) {
+        count++;
+        expected = dayDate;
+      } else {
+        break;
+      }
+    }
+    return count;
+  })();
 
   // Chart data
   const chartData = weights.map((w) => ({
@@ -152,36 +144,22 @@ export default function ProgressPage() {
             <Flame className="w-4 h-4 text-yellow-500" />
           </div>
           <div className="text-2xl font-bold text-green-800">{streak}</div>
-          <div className="text-xs text-green-500 mt-0.5">injecties gelogd</div>
+          <div className="text-xs text-green-500 mt-0.5">dagen streak</div>
         </div>
       </div>
 
       {/* Quick weight log */}
       <div className="card">
         <h3 className="font-semibold text-green-800 mb-3 text-sm">Gewicht loggen</h3>
-        <div className="flex gap-2">
-          <input
-            type="number"
-            step="0.1"
-            value={newWeight}
-            onChange={(e) => setNewWeight(e.target.value)}
-            className="input-field flex-1"
-            placeholder="bijv. 95.4"
-          />
-          <button
-            onClick={handleLogWeight}
-            disabled={!newWeight || saving}
-            className="btn-secondary px-4 py-3 disabled:opacity-50"
-          >
-            {saving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : saved ? (
-              "✓"
-            ) : (
-              <Plus className="w-4 h-4" />
-            )}
-          </button>
-        </div>
+        <WeightLogForm
+          compact
+          onSaved={(kg) => {
+            setWeights((prev) => [
+              ...prev,
+              { logged_at: new Date().toISOString(), weight_kg: kg },
+            ]);
+          }}
+        />
       </div>
 
       {/* Weight Chart */}
@@ -233,15 +211,16 @@ export default function ProgressPage() {
       )}
 
       {/* Comparison */}
-      {weeksSinceStart && weeksSinceStart >= 4 && (
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
-          <p className="text-sm text-green-800 font-medium mb-1">📊 Vergelijking met klinische studies</p>
-          <p className="text-xs text-green-700 leading-relaxed">
-            In klinische studies verloren Wegovy-gebruikers gemiddeld 15% van hun lichaamsgewicht in ~68 weken.
-            Dat is ongeveer 0,2–0,3% per week. Elk lichaam is anders — wat telt is de richting, niet de snelheid.
-          </p>
-        </div>
-      )}
+      <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
+        <p className="text-sm text-green-800 font-medium mb-1">📊 Vergelijking met klinische studies</p>
+        <p className="text-xs text-green-700 leading-relaxed">
+          Klinische studies tonen gemiddeld 5–15% gewichtsverlies in 6 maanden met GLP-1 medicatie.
+          {weeksSinceStart !== null && weeksSinceStart > 0
+            ? ` Jij bent nu ${weeksSinceStart} week${weeksSinceStart !== 1 ? "en" : ""} onderweg.`
+            : ""}
+          {" "}Elk lichaam is anders — wat telt is de richting, niet de snelheid.
+        </p>
+      </div>
 
       {/* Recent injections */}
       {injections.length > 0 && (

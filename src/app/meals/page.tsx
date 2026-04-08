@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { format, isToday } from "date-fns";
 import { nl } from "date-fns/locale";
-import { Loader2, CheckCircle, Apple, Droplets, Plus } from "lucide-react";
+import { Loader2, CheckCircle, Apple, Droplets, Plus, Sparkles } from "lucide-react";
 
 interface MealRecord {
   id: string;
@@ -32,6 +32,11 @@ export default function MealsPage() {
   const [checkin, setCheckin] = useState<CheckinRecord | null>(null);
   const [updatingWater, setUpdatingWater] = useState(false);
 
+  // AI analysis state
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiTip, setAiTip] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+
   const totalProtein = todaysMeals.reduce((sum, m) => sum + m.protein_estimate_g, 0);
   const waterMl = checkin?.water_ml || 0;
   const today = new Date().toISOString().split("T")[0];
@@ -58,6 +63,34 @@ export default function MealsPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleAnalyzeWithAI = async () => {
+    if (!description.trim()) return;
+    setAiError(null);
+    setAiTip(null);
+    setAnalyzing(true);
+
+    try {
+      const res = await fetch("/api/meals/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: description.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Analyse mislukt");
+
+      if (data.protein_estimate_g > 0) {
+        setProteinEstimate(String(data.protein_estimate_g));
+      }
+      if (data.tips?.length > 0) {
+        setAiTip(data.tips.join(" "));
+      }
+    } catch (err: unknown) {
+      setAiError(err instanceof Error ? err.message : "AI analyse mislukt.");
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   const handleLogMeal = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,15 +223,49 @@ export default function MealsPage() {
 
         <div>
           <label className="label">Wat heb je gegeten?</label>
-          <input
-            type="text"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="input-field"
-            placeholder="bijv. Griekse yoghurt met bessen"
-            required
-          />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                setAiTip(null);
+              }}
+              className="input-field flex-1"
+              placeholder="bijv. Griekse yoghurt met bessen"
+              required
+            />
+            <button
+              type="button"
+              onClick={handleAnalyzeWithAI}
+              disabled={!description.trim() || analyzing}
+              title="Analyseer eiwitgehalte met AI"
+              className="shrink-0 px-3 py-2.5 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-600 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {analyzing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+          <p className="text-xs text-green-500 mt-1.5">
+            Klik op ✨ om het eiwitgehalte automatisch in te schatten.
+          </p>
         </div>
+
+        {/* AI Tip callout */}
+        {aiTip && (
+          <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-800">
+            <span className="font-medium">AI tip: </span>{aiTip}
+          </div>
+        )}
+
+        {aiError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+            {aiError}
+          </div>
+        )}
 
         <div>
           <label className="label">Geschat eiwit (g)</label>

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
-import { Loader2, CheckCircle, Crown, AlertTriangle } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Loader2, CheckCircle, Crown, AlertTriangle, ExternalLink } from "lucide-react";
 import type { MedicationType } from "@/lib/types";
 
 const MEDICATIONS: { value: MedicationType; label: string }[] = [
@@ -25,6 +25,8 @@ const DAYS = [
 
 export default function SettingsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const upgraded = searchParams.get("upgraded") === "1";
 
   const [email, setEmail] = useState("");
   const [medication, setMedication] = useState<MedicationType>("ozempic");
@@ -44,30 +46,33 @@ export default function SettingsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState("");
 
   const [loading, setLoading] = useState(true);
+  const [stripeLoading, setStripeLoading] = useState(false);
+  const [stripeError, setStripeError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    if (profile) {
+      setEmail(profile.email || user.email || "");
+      setMedication(profile.medication_type || "ozempic");
+      setDoseMg(profile.dose_mg || 0.5);
+      setInjectionDay(profile.injection_day ?? 1);
+      setSubscriptionTier(profile.subscription_tier || "free");
+    }
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    const load = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from("user_profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (profile) {
-        setEmail(profile.email || user.email || "");
-        setMedication(profile.medication_type || "ozempic");
-        setDoseMg(profile.dose_mg || 0.5);
-        setInjectionDay(profile.injection_day ?? 1);
-        setSubscriptionTier(profile.subscription_tier || "free");
-      }
-      setLoading(false);
-    };
     load();
-  }, []);
+  }, [load]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,6 +115,36 @@ export default function SettingsPage() {
       setTimeout(() => setSavedPassword(false), 3000);
     } finally {
       setSavingPassword(false);
+    }
+  };
+
+  const handleUpgrade = async () => {
+    setStripeError(null);
+    setStripeLoading(true);
+    try {
+      const res = await fetch("/api/stripe/checkout", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Onbekende fout");
+      if (data.url) window.location.href = data.url;
+    } catch (err: unknown) {
+      setStripeError(err instanceof Error ? err.message : "Kon betaalpagina niet openen.");
+    } finally {
+      setStripeLoading(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setStripeError(null);
+    setStripeLoading(true);
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Onbekende fout");
+      if (data.url) window.location.href = data.url;
+    } catch (err: unknown) {
+      setStripeError(err instanceof Error ? err.message : "Kon klantenportaal niet openen.");
+    } finally {
+      setStripeLoading(false);
     }
   };
 
@@ -218,36 +253,71 @@ export default function SettingsPage() {
         </button>
       </form>
 
+      {/* Upgrade success banner */}
+      {upgraded && (
+        <div className="bg-green-50 border border-green-300 text-green-800 rounded-2xl px-4 py-4 flex items-center gap-3">
+          <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
+          <div>
+            <div className="font-semibold text-sm">Welkom bij GlpCoach Pro!</div>
+            <div className="text-xs mt-0.5">Je hebt nu toegang tot alle Pro functies.</div>
+          </div>
+        </div>
+      )}
+
       {/* Subscription */}
       <div className="card">
         <div className="flex items-center gap-3 mb-4">
           <Crown className={`w-5 h-5 ${subscriptionTier === "pro" ? "text-yellow-500" : "text-green-400"}`} />
           <div>
             <h2 className="font-semibold text-green-800">
-              {subscriptionTier === "pro" ? "Pro abonnement" : "Gratis abonnement"}
+              {subscriptionTier === "pro" ? "Pro abonnement actief" : "Gratis abonnement"}
             </h2>
             <p className="text-xs text-green-500">
               {subscriptionTier === "pro"
-                ? "Je hebt toegang tot alle Pro functies"
+                ? "Onbeperkte AI coaching en alle functies"
                 : "Upgrade voor onbeperkte AI coaching"}
             </p>
           </div>
         </div>
 
+        {stripeError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-3">
+            {stripeError}
+          </div>
+        )}
+
         {subscriptionTier === "free" && (
-          <a
-            href="#"
-            className="btn-primary w-full text-center block text-sm"
+          <button
+            onClick={handleUpgrade}
+            disabled={stripeLoading}
+            className="btn-primary w-full disabled:opacity-60"
           >
-            <Crown className="w-4 h-4" />
-            Upgrade naar Pro — €12,99/maand
-          </a>
+            {stripeLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <Crown className="w-4 h-4" />
+                Upgrade naar Pro — €12,99/maand
+              </>
+            )}
+          </button>
         )}
 
         {subscriptionTier === "pro" && (
-          <p className="text-sm text-green-600">
-            Abonnement beheren via je betalingsprovider.
-          </p>
+          <button
+            onClick={handleManageSubscription}
+            disabled={stripeLoading}
+            className="btn-outline w-full disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {stripeLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <ExternalLink className="w-4 h-4" />
+                Beheer abonnement
+              </>
+            )}
+          </button>
         )}
       </div>
 

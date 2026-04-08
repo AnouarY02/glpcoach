@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { differenceInDays, format } from "date-fns";
 import { nl } from "date-fns/locale";
-import { Loader2, CheckCircle, Activity } from "lucide-react";
+import { Loader2, CheckCircle, Activity, Download } from "lucide-react";
+import { CycleDayBadge } from "@/components/CycleDayBadge";
 import type { SymptomType } from "@/lib/types";
 
 const SYMPTOMS: { value: SymptomType; label: string; emoji: string }[] = [
@@ -44,6 +45,7 @@ export default function SymptomsPage() {
   const [error, setError] = useState<string | null>(null);
   const [recentSymptoms, setRecentSymptoms] = useState<SymptomRecord[]>([]);
   const [cycleDay, setCycleDay] = useState<number | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -104,13 +106,37 @@ export default function SymptomsPage() {
     }
   };
 
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/symptoms/export");
+      if (!res.ok) throw new Error("Export mislukt");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `glpcoach-bijwerkingen-${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: unknown) {
+      console.error("Export error:", err);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const cycleTip = cycleDay ? CYCLE_TIPS[Math.min(cycleDay, 7)] : null;
 
   return (
     <div className="space-y-6 max-w-lg">
-      <div>
-        <h1 className="text-2xl font-bold text-green-800">Bijwerkingen</h1>
-        <p className="text-green-600 text-sm mt-0.5">Patronen herkennen begint met bijhouden.</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-green-800">Bijwerkingen</h1>
+          <p className="text-green-600 text-sm mt-0.5">Patronen herkennen begint met bijhouden.</p>
+        </div>
+        {cycleDay && <CycleDayBadge day={cycleDay} />}
       </div>
 
       {/* Cycle Context */}
@@ -241,7 +267,7 @@ export default function SymptomsPage() {
                     </div>
                     <div className="text-xs text-green-500">
                       {format(new Date(sym.logged_at), "d MMM 'om' HH:mm", { locale: nl })}
-                      {sym.cycle_day && ` · Dag ${sym.cycle_day}`}
+                      {sym.cycle_day && ` · Dag ${sym.cycle_day} van cyclus`}
                     </div>
                   </div>
                   <div className="flex gap-0.5 shrink-0">
@@ -260,6 +286,30 @@ export default function SymptomsPage() {
           </div>
         </div>
       )}
+
+      {/* Export for doctor */}
+      <div className="card bg-blue-50 border-blue-100">
+        <div className="flex items-center gap-3">
+          <div className="flex-1">
+            <div className="font-semibold text-blue-800 text-sm">Export voor arts</div>
+            <div className="text-xs text-blue-600 mt-0.5">
+              Download de laatste 30 dagen als CSV voor je zorgverlener.
+            </div>
+          </div>
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="shrink-0 flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-medium rounded-xl transition-colors"
+          >
+            {exporting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            {exporting ? "Laden..." : "Exporteren"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
