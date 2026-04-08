@@ -1,15 +1,16 @@
 import Link from "next/link";
 import {
   Syringe,
-  Brain,
-  TrendingDown,
+  TrendingUp,
   Apple,
   CheckCircle,
   Star,
   ArrowRight,
   Zap,
   Shield,
-  Heart,
+  Calendar,
+  Droplets,
+  Clipboard,
 } from "lucide-react";
 
 export default function LandingPage() {
@@ -32,7 +33,7 @@ export default function LandingPage() {
               Inloggen
             </Link>
             <Link href="/register" className="btn-primary text-sm py-2 px-4">
-              Start gratis
+              7 dagen gratis proberen
             </Link>
           </div>
         </div>
@@ -45,23 +46,22 @@ export default function LandingPage() {
           Speciaal voor GLP-1 gebruikers
         </div>
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-green-800 leading-tight mb-6">
-          Je GLP-1 werkt.<br />
-          <span className="text-orange-500">Maar doe jij het ook?</span>
+          Alles op één plek<br />
+          <span className="text-orange-500">voor je GLP-1 reis</span>
         </h1>
         <p className="text-lg md:text-xl text-green-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-          GlpCoach begeleidt je week voor week door je medicatiecyclus. Bijwerkingen begrijpen,
-          injecties bijhouden en een AI-coach die weet waar je in je cyclus zit.
+          Houd je injecties, voeding, bijwerkingen en voortgang bij — zodat jij en je arts altijd een compleet beeld hebben.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/register" className="btn-primary text-base px-8 py-4">
-            Start gratis — 7 dagen Pro
+            7 dagen gratis proberen
             <ArrowRight className="w-4 h-4" />
           </Link>
-          <Link href="#features" className="btn-outline text-base px-8 py-4">
-            Bekijk hoe het werkt
+          <Link href="/login" className="btn-outline text-base px-8 py-4">
+            Inloggen
           </Link>
         </div>
-        <p className="mt-4 text-sm text-green-500">Geen creditcard nodig • Annuleer altijd</p>
+        <p className="mt-4 text-sm text-green-500">Al door 8.000+ GLP-1 gebruikers gebruikt om hun reis bij te houden</p>
       </section>
 
       {/* Pain Points */}
@@ -73,23 +73,23 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-6">
             {[
               {
-                emoji: "😕",
-                title: "Wanneer was mijn laatste injectie ook alweer?",
+                icon: <Calendar className="w-8 h-8 text-green-600" />,
+                title: "Wanneer was je laatste injectie ook alweer?",
                 desc: "Je weet dat je injectie bijna op moet, maar je weet niet meer precies wanneer je de laatste hebt gezet.",
               },
               {
-                emoji: "🤢",
-                title: "Is deze misselijkheid normaal?",
-                desc: "Op dag 2 na je injectie voel je je niet goed. Is dit normaal, zal het overgaan? Je weet het gewoon niet.",
+                icon: <Droplets className="w-8 h-8 text-orange-500" />,
+                title: "Hoeveel water heb je vandaag gedronken?",
+                desc: "Voldoende hydratatie is belangrijk, maar het is makkelijk om te vergeten bij te houden hoeveel je drinkt.",
               },
               {
-                emoji: "😩",
-                title: "Ik eet te weinig eiwit, maar hoe houd ik dat bij?",
-                desc: "Je arts zegt: eet meer eiwit. Maar caloriëtellen voel je niet, en je weet niet waar je moet beginnen.",
+                icon: <Clipboard className="w-8 h-8 text-green-600" />,
+                title: "Wat wil je je arts vertellen bij je volgende afspraak?",
+                desc: "Bij het artsbezoek weet je niet meer precies wat je hebt ervaren. GlpCoach houdt het allemaal bij.",
               },
             ].map((item) => (
               <div key={item.title} className="card text-center">
-                <div className="text-4xl mb-4">{item.emoji}</div>
+                <div className="flex justify-center mb-4">{item.icon}</div>
                 <h3 className="font-semibold text-green-800 mb-2">{item.title}</h3>
                 <p className="text-green-600 text-sm leading-relaxed">{item.desc}</p>
               </div>
@@ -104,32 +104,32 @@ export default function LandingPage() {
           Alles wat je nodig hebt, op één plek
         </h2>
         <p className="text-green-600 text-center mb-14 max-w-xl mx-auto">
-          GlpCoach is gebouwd rondom jouw 7-daagse medicatiecyclus.
+          GlpCoach is gebouwd voor iedereen op een GLP-1 behandeling.
         </p>
         <div className="grid md:grid-cols-2 gap-8">
           {[
             {
               icon: <Syringe className="w-6 h-6" />,
               title: "Injectie tracker",
-              desc: "Log elke injectie in 10 seconden. Zie wanneer je volgende injectie gepland staat en welke lichaamslocaties je al gebruikt hebt.",
+              desc: "Nooit meer vergeten wanneer je gespoten hebt. Log elke injectie in 10 seconden en zie wanneer je volgende injectie gepland staat.",
               color: "bg-green-50 text-green-600",
             },
             {
-              icon: <Brain className="w-6 h-6" />,
-              title: "AI dagcoach",
-              desc: "Stel vragen aan je persoonlijke GLP-1 coach. Die weet precies op welke dag van je cyclus je zit en geeft advies dat daarbij past.",
+              icon: <Clipboard className="w-6 h-6" />,
+              title: "Bijwerkingen log",
+              desc: "Alles klaar voor je artsbezoek. Noteer wat je hebt ervaren zodat je bij je volgende afspraak een compleet beeld kunt geven.",
               color: "bg-orange-50 text-orange-500",
             },
             {
-              icon: <Heart className="w-6 h-6" />,
-              title: "Bijwerkingen logboek",
-              desc: "Tik snel aan welke bijwerkingen je hebt en hoe erg. Zo zie je patronen: misselijkheid op dag 2 is heel normaal!",
+              icon: <Apple className="w-6 h-6" />,
+              title: "Voeding check",
+              desc: "Eiwit en hydratatie bijhouden. Houd bij hoeveel water je drinkt en of je voldoende eiwitrijke maaltijden eet.",
               color: "bg-green-50 text-green-600",
             },
             {
-              icon: <TrendingDown className="w-6 h-6" />,
-              title: "Voortgang in beeld",
-              desc: "Zie je gewichtsverloop, je streak en vergelijk met wat klinisch gebruikelijk is voor jouw medicatie.",
+              icon: <TrendingUp className="w-6 h-6" />,
+              title: "Voortgang",
+              desc: "Je reis in één oogopslag. Zie je gewichtsverloop en je streak over tijd in een duidelijk overzicht.",
               color: "bg-orange-50 text-orange-500",
             },
           ].map((feature) => (
@@ -155,10 +155,10 @@ export default function LandingPage() {
             ))}
           </div>
           <p className="text-2xl md:text-3xl font-bold mb-3">
-            8.000+ gebruikers vertrouwen GlpCoach
+            Al door 8.000+ GLP-1 gebruikers gebruikt om hun reis bij te houden
           </p>
           <p className="text-green-200 text-lg max-w-xl mx-auto">
-            "Eindelijk begrijp ik waarom ik me elke week anders voel. En mijn coach geeft tips die echt helpen."
+            "Eindelijk heb ik alles op één plek. Bij mijn artsbezoek kon ik precies vertellen wat ik had bijgehouden."
           </p>
           <p className="text-green-300 text-sm mt-3">— Sophie, 34, Ozempic gebruiker</p>
         </div>
@@ -183,7 +183,7 @@ export default function LandingPage() {
                 "Injectie tracker",
                 "Bijwerkingen loggen",
                 "Gewicht bijhouden",
-                "3 AI coach berichten/dag",
+                "3 assistent berichten/dag",
                 "Voortgang dashboard",
               ].map((item) => (
                 <li key={item} className="flex items-center gap-2 text-sm text-green-700">
@@ -213,7 +213,7 @@ export default function LandingPage() {
             <ul className="space-y-3 mb-8">
               {[
                 "Alles van Gratis",
-                "Onbeperkt AI coaching",
+                "Onbeperkt berichten",
                 "Maaltijd analyse (foto)",
                 "Geavanceerde voortgang",
                 "Export naar PDF",
@@ -226,7 +226,7 @@ export default function LandingPage() {
               ))}
             </ul>
             <Link href="/register" className="btn-primary w-full text-center block">
-              Begin met Pro
+              7 dagen gratis proberen
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -242,9 +242,9 @@ export default function LandingPage() {
             </div>
             <span className="font-bold text-green-800">GlpCoach</span>
           </div>
-          <div className="flex items-center gap-1 text-green-500 text-sm">
-            <Shield className="w-3.5 h-3.5" />
-            <span>GlpCoach is geen medisch advies. Raadpleeg altijd je arts.</span>
+          <div className="flex items-center gap-1 text-slate-400 text-xs max-w-sm text-center">
+            <Shield className="w-3.5 h-3.5 shrink-0" />
+            <span>GlpCoach is een tracking en organisatie app. Wij geven geen medisch advies. Raadpleeg altijd je arts of zorgverlener voor medische vragen.</span>
           </div>
           <p className="text-green-500 text-sm">© 2025 GlpCoach</p>
         </div>

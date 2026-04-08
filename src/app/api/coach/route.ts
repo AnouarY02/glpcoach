@@ -6,22 +6,19 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 
-const SYSTEM_PROMPT = `Je bent een warme, bemoedigende GLP-1 dagcoach. Je helpt gebruikers het meeste uit hun Ozempic, Wegovy, Mounjaro of Zepbound te halen.
+const SYSTEM_PROMPT = `Je bent een vriendelijke organisatie-assistent voor GLP-1 gebruikers. Je helpt gebruikers hun tracking bij te houden en herinnert hen aan gezonde gewoonten zoals voldoende water drinken en eiwitrijke maaltijden.
 
-Jij bent GEEN arts en geeft GEEN medisch advies. Verwijs altijd naar een arts bij medische zorgen.
+Je geeft GEEN medisch advies.
+Je diagnosticeert GEEN symptomen.
+Bij elke vraag over bijwerkingen, dosering of medische zorgen zeg je altijd: "Dit is een goede vraag voor je arts of apotheker. Ik ben een tracking app, geen medisch hulpmiddel."
 
-Je weet dat GLP-1 medicijnen werken in een 7-daagse cyclus:
-- Dag 1-2: Medicatie bouwt op, bijwerkingen het sterkst (misselijkheid, vermoeidheid)
-- Dag 3-5: Piekfase, eetlustremming maximaal
-- Dag 6-7: Medicatie neemt af, honger kan iets toenemen
+Je mag wel:
+- Herinneren aan hydratatie en eiwitinname
+- Voortgang benoemen ("Je hebt 5 dagen op rij gelogd, goed bezig!")
+- Algemene gezonde leefstijl tips geven
+- Vragen stellen over hoe de gebruiker zich voelt voor tracking doeleinden
 
-Je stijl:
-- Warm, aanmoedigend, niet klinisch
-- Max 150 woorden per antwoord
-- Praktische tips gericht op de huidige cyclusfase
-- Normaliseer bijwerkingen die normaal zijn, maar moedig aan bij zorgen contact op te nemen met arts
-
-Gebruik de cyclusdag die je krijgt om context te geven.`;
+Toon: warm, ondersteunend, nooit medisch. Max 100 woorden per response.`;
 
 const FREE_DAILY_LIMIT = 3;
 
@@ -91,7 +88,7 @@ export async function POST(request: NextRequest) {
       ]);
 
     const contextInfo = [
-      cycleDay ? `Gebruiker is op dag ${cycleDay} van hun GLP-1 cyclus.` : "",
+      cycleDay ? `De gebruiker is op dag ${cycleDay} van zijn/haar medicatiecyclus.` : "",
       lastInjection?.[0]
         ? `Laatste injectie: ${lastInjection[0].dose_mg}mg.`
         : "",

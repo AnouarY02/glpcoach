@@ -25,6 +25,9 @@ const DAYS = [
   { value: 6, label: "Zaterdag" },
 ];
 
+// Steps: 1 = medicatie, 2 = disclaimer, 3 = gewicht, 4 = injectiedag
+const TOTAL_STEPS = 4;
+
 export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -35,13 +38,13 @@ export default function OnboardingPage() {
   const [medication, setMedication] = useState<MedicationType | null>(null);
   const [dose, setDose] = useState<number | null>(null);
 
-  // Step 2
+  // Step 3
   const [startWeight, setStartWeight] = useState("");
   const [startDate, setStartDate] = useState(
     new Date().toISOString().split("T")[0]
   );
 
-  // Step 3
+  // Step 4
   const [injectionDay, setInjectionDay] = useState<number | null>(null);
   const [firstInjectionDate, setFirstInjectionDate] = useState(
     new Date().toISOString().split("T")[0]
@@ -49,8 +52,9 @@ export default function OnboardingPage() {
 
   const canNext = () => {
     if (step === 1) return medication && dose;
-    if (step === 2) return startWeight && parseFloat(startWeight) > 0;
-    if (step === 3) return injectionDay !== null;
+    if (step === 2) return true; // disclaimer always passable via button
+    if (step === 3) return startWeight && parseFloat(startWeight) > 0;
+    if (step === 4) return injectionDay !== null;
     return false;
   };
 
@@ -99,28 +103,32 @@ export default function OnboardingPage() {
     }
   };
 
+  // Progress indicator shows steps 1, 2, 3, 4 — step 2 is the disclaimer
+  // Map display numbers: step 1 → dot 1, step 2 → dot 2, step 3 → dot 3, step 4 → dot 4
+  const displayStep = step;
+
   return (
     <div className="min-h-screen bg-cream flex flex-col items-center justify-center px-4 py-10">
       <div className="w-full max-w-lg">
         {/* Progress */}
         <div className="flex items-center gap-2 mb-8">
-          {[1, 2, 3].map((s) => (
+          {[1, 2, 3, 4].map((s) => (
             <div key={s} className="flex items-center gap-2 flex-1">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
-                  s < step
+                  s < displayStep
                     ? "bg-green-600 text-white"
-                    : s === step
+                    : s === displayStep
                     ? "bg-orange-500 text-white"
                     : "bg-green-100 text-green-500"
                 }`}
               >
-                {s < step ? <CheckCircle className="w-4 h-4" /> : s}
+                {s < displayStep ? <CheckCircle className="w-4 h-4" /> : s}
               </div>
-              {s < 3 && (
+              {s < 4 && (
                 <div
                   className={`flex-1 h-1 rounded-full transition-colors ${
-                    s < step ? "bg-green-600" : "bg-green-100"
+                    s < displayStep ? "bg-green-600" : "bg-green-100"
                   }`}
                 />
               )}
@@ -129,7 +137,7 @@ export default function OnboardingPage() {
         </div>
 
         <div className="card shadow-md">
-          {/* Step 1 */}
+          {/* Step 1 — Medicatie */}
           {step === 1 && (
             <div>
               <h2 className="text-xl font-bold text-green-800 mb-1">
@@ -177,8 +185,25 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Step 2 */}
+          {/* Step 2 — Disclaimer */}
           {step === 2 && (
+            <div>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-4">
+                <h2 className="text-xl font-bold text-green-800 mb-3">
+                  Even belangrijk 📋
+                </h2>
+                <p className="text-green-700 font-semibold mb-3">
+                  GlpCoach helpt je bijhouden, niet bijsturen.
+                </p>
+                <p className="text-green-600 text-sm leading-relaxed">
+                  Wij zijn een organisatie app — geen vervanging voor medisch advies. Blijf altijd in contact met je arts over je behandeling.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3 — Startgewicht */}
+          {step === 3 && (
             <div>
               <h2 className="text-xl font-bold text-green-800 mb-1">
                 Je startpunt
@@ -214,8 +239,8 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Step 3 */}
-          {step === 3 && (
+          {/* Step 4 — Injectiedag */}
+          {step === 4 && (
             <div>
               <h2 className="text-xl font-bold text-green-800 mb-1">
                 Je injectiedag
@@ -273,7 +298,16 @@ export default function OnboardingPage() {
               </button>
             )}
 
-            {step < 3 ? (
+            {step === 2 ? (
+              // Disclaimer step: special CTA button
+              <button
+                onClick={() => setStep(3)}
+                className="btn-primary flex-1"
+              >
+                Ik begrijp het — verder
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            ) : step < TOTAL_STEPS ? (
               <button
                 onClick={() => setStep(step + 1)}
                 disabled={!canNext()}
@@ -305,7 +339,7 @@ export default function OnboardingPage() {
         </div>
 
         <p className="text-center text-xs text-green-500 mt-4">
-          Stap {step} van 3 — Je kunt dit later altijd aanpassen in je instellingen.
+          Stap {step} van {TOTAL_STEPS} — Je kunt dit later altijd aanpassen in je instellingen.
         </p>
       </div>
     </div>
