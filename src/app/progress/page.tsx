@@ -13,7 +13,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { TrendingDown, Scale, Syringe, Flame, Loader2 } from "lucide-react";
+import { TrendingDown, Scale, Syringe, Flame, Loader2, FileText } from "lucide-react";
+import Link from "next/link";
 import { WeightLogForm } from "@/components/WeightLogForm";
 
 interface WeightEntry {
@@ -102,9 +103,18 @@ export default function ProgressPage() {
 
   return (
     <div className="space-y-6 max-w-lg">
-      <div>
-        <h1 className="text-2xl font-bold text-green-800">Jouw voortgang</h1>
-        <p className="text-green-600 text-sm mt-0.5">Elke gram telt — en jij bent op de goede weg.</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-green-800">Jouw voortgang</h1>
+          <p className="text-green-600 text-sm mt-0.5">Elke gram telt — en jij bent op de goede weg.</p>
+        </div>
+        <Link
+          href="/report"
+          className="flex items-center gap-1.5 text-xs font-medium bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 px-3 py-2 rounded-xl transition-colors shrink-0"
+        >
+          <FileText className="w-3.5 h-3.5" />
+          Rapport voor arts
+        </Link>
       </div>
 
       {/* Key Stats */}

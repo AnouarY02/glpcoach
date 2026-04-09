@@ -9,6 +9,7 @@ const PROTECTED_ROUTES = [
   "/meals",
   "/progress",
   "/settings",
+  "/report",
 ];
 
 const PUBLIC_ROUTES = ["/", "/login", "/register", "/api/auth/callback"];
