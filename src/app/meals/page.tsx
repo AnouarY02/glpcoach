@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { format, isToday } from "date-fns";
+import { format } from "date-fns";
 import { nl } from "date-fns/locale";
-import { Loader2, CheckCircle, Apple, Droplets, Plus, Sparkles } from "lucide-react";
+import { Loader2, CheckCircle, Apple, Droplets, Plus, Sparkles, Camera, X } from "lucide-react";
 
 interface MealRecord {
   id: string;
@@ -31,6 +31,11 @@ export default function MealsPage() {
   const [todaysMeals, setTodaysMeals] = useState<MealRecord[]>([]);
   const [checkin, setCheckin] = useState<CheckinRecord | null>(null);
   const [updatingWater, setUpdatingWater] = useState(false);
+
+  // Photo state
+  const [photoBase64, setPhotoBase64] = useState<string | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // AI analysis state
   const [analyzing, setAnalyzing] = useState(false);
@@ -64,8 +69,28 @@ export default function MealsPage() {
     loadData();
   }, []);
 
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const result = ev.target?.result as string;
+      setPhotoPreview(result);
+      // Strip the data URL prefix to get pure base64
+      setPhotoBase64(result.split(",")[1]);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearPhoto = () => {
+    setPhotoBase64(null);
+    setPhotoPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const handleAnalyzeWithAI = async () => {
-    if (!description.trim()) return;
+    if (!description.trim() && !photoBase64) return;
     setAiError(null);
     setAiTip(null);
     setAnalyzing(true);
@@ -74,7 +99,7 @@ export default function MealsPage() {
       const res = await fetch("/api/meals/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: description.trim() }),
+        body: JSON.stringify({ description: description.trim() || "zie foto", photoBase64 }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Analyse mislukt");
@@ -94,7 +119,7 @@ export default function MealsPage() {
 
   const handleLogMeal = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!description.trim()) return;
+    if (!description.trim() && !photoBase64) return;
     setError(null);
     setLoading(true);
 
@@ -105,7 +130,7 @@ export default function MealsPage() {
 
       const { error } = await supabase.from("meals").insert({
         user_id: user.id,
-        description: description.trim(),
+        description: description.trim() || "Maaltijd via foto",
         protein_estimate_g: parseInt(proteinEstimate) || 0,
       });
 
@@ -114,6 +139,7 @@ export default function MealsPage() {
       setSuccess(true);
       setDescription("");
       setProteinEstimate("");
+      clearPhoto();
       await loadData();
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: unknown) {
@@ -221,6 +247,41 @@ export default function MealsPage() {
       <form onSubmit={handleLogMeal} className="card space-y-4">
         <h2 className="font-semibold text-green-800">Maaltijd loggen</h2>
 
+        {/* Photo upload */}
+        <div>
+          <label className="label">Foto (optioneel)</label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handlePhotoChange}
+            className="hidden"
+          />
+          {photoPreview ? (
+            <div className="relative w-full rounded-xl overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={photoPreview} alt="Maaltijdfoto" className="w-full max-h-48 object-cover rounded-xl" />
+              <button
+                type="button"
+                onClick={clearPhoto}
+                className="absolute top-2 right-2 w-7 h-7 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full py-4 border-2 border-dashed border-green-200 hover:border-green-400 rounded-xl text-green-500 hover:text-green-700 flex flex-col items-center gap-1.5 transition-colors"
+            >
+              <Camera className="w-5 h-5" />
+              <span className="text-sm">Foto maken of kiezen</span>
+            </button>
+          )}
+        </div>
+
         <div>
           <label className="label">Wat heb je gegeten?</label>
           <div className="flex gap-2">
@@ -233,12 +294,11 @@ export default function MealsPage() {
               }}
               className="input-field flex-1"
               placeholder="bijv. Griekse yoghurt met bessen"
-              required
             />
             <button
               type="button"
               onClick={handleAnalyzeWithAI}
-              disabled={!description.trim() || analyzing}
+              disabled={(!description.trim() && !photoBase64) || analyzing}
               title="Analyseer eiwitgehalte met AI"
               className="shrink-0 px-3 py-2.5 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-600 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -250,7 +310,7 @@ export default function MealsPage() {
             </button>
           </div>
           <p className="text-xs text-green-500 mt-1.5">
-            Klik op ✨ om het eiwitgehalte automatisch in te schatten.
+            Maak een foto of typ een omschrijving — klik ✨ voor AI analyse.
           </p>
         </div>
 
@@ -298,7 +358,7 @@ export default function MealsPage() {
 
         <button
           type="submit"
-          disabled={!description.trim() || loading}
+          disabled={(!description.trim() && !photoBase64) || loading}
           className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? (
