@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { differenceInDays } from "date-fns";
-import { Brain, Send, Loader2 } from "lucide-react";
+import { Brain, Send, Loader2, AlertTriangle } from "lucide-react";
 
 interface Message {
   role: "user" | "assistant";
@@ -98,13 +98,21 @@ export default function CoachPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] max-w-2xl">
+      {/* Disclaimer banner */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 flex items-start gap-2 mb-3 shrink-0">
+        <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+        <p className="text-xs text-amber-800 leading-snug">
+          <span className="font-semibold">Geen medisch hulpmiddel.</span> Dit is een tracking-assistent — geen arts, geen diagnose, geen medisch advies. Raadpleeg altijd je arts of apotheker voor medische vragen.
+        </p>
+      </div>
+
       {/* Header */}
       <div className="flex items-center gap-3 pb-4 border-b border-green-100 shrink-0">
         <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
           <Brain className="w-5 h-5 text-orange-500" />
         </div>
         <div>
-          <h1 className="font-bold text-green-800">AI Coach</h1>
+          <h1 className="font-bold text-green-800">Tracking Assistent</h1>
           {cycleDay && (
             <p className="text-xs text-green-600">
               Je bent op dag {cycleDay} van je cyclus

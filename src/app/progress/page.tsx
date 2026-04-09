@@ -210,15 +210,10 @@ export default function ProgressPage() {
         </div>
       )}
 
-      {/* Comparison */}
-      <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
-        <p className="text-sm text-green-800 font-medium mb-1">📊 Vergelijking met klinische studies</p>
-        <p className="text-xs text-green-700 leading-relaxed">
-          Klinische studies tonen gemiddeld 5–15% gewichtsverlies in 6 maanden met GLP-1 medicatie.
-          {weeksSinceStart !== null && weeksSinceStart > 0
-            ? ` Jij bent nu ${weeksSinceStart} week${weeksSinceStart !== 1 ? "en" : ""} onderweg.`
-            : ""}
-          {" "}Elk lichaam is anders — wat telt is de richting, niet de snelheid.
+      {/* Reminder */}
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+        <p className="text-xs text-amber-800 leading-relaxed">
+          <span className="font-semibold">Let op:</span> Deze app registreert jouw eigen gegevens. Het is geen medisch hulpmiddel en vervangt geen advies van je arts. Bespreek je voortgang altijd met je behandelend arts.
         </p>
       </div>
 
