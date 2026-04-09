@@ -33,30 +33,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Niet ingelogd" }, { status: 401 });
     }
 
-    // Check subscription and message limit
-    const { data: profile } = await supabase
-      .from("user_profiles")
-      .select("subscription_tier")
-      .eq("id", user.id)
-      .single();
-
-    const isPro = profile?.subscription_tier === "pro";
-
-    if (!isPro) {
-      // Count today's coaching messages via daily_checkins
-      const today = new Date().toISOString().split("T")[0];
-      const { data: checkin } = await supabase
-        .from("daily_checkins")
-        .select("ai_coaching_response")
-        .eq("user_id", user.id)
-        .eq("date", today)
-        .single();
-
-      // Simple count approach: parse message count from coaching_response metadata
-      // For MVP: allow up to FREE_DAILY_LIMIT per day based on client-side count
-      // (Full implementation would track per message in a separate table)
-    }
-
     const body = await request.json();
     const { messages, cycleDay } = body;
 

@@ -264,8 +264,8 @@ function SettingsContent() {
         </div>
       )}
 
-      {/* Subscription */}
-      <div className="card">
+      {/* Subscription — tijdelijk verborgen, Stripe komt later */}
+      <div className="card hidden">
         <div className="flex items-center gap-3 mb-4">
           <Crown className={`w-5 h-5 ${subscriptionTier === "pro" ? "text-yellow-500" : "text-green-400"}`} />
           <div>

@@ -3,22 +3,18 @@
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { differenceInDays } from "date-fns";
-import { Brain, Send, Loader2, Lock } from "lucide-react";
+import { Brain, Send, Loader2 } from "lucide-react";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
-const FREE_MESSAGE_LIMIT = 3;
-
 export default function CoachPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [cycleDay, setCycleDay] = useState<number | null>(null);
-  const [isPro, setIsPro] = useState(false);
-  const [messageCount, setMessageCount] = useState(0);
   const [initLoading, setInitLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -32,19 +28,12 @@ export default function CoachPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const [{ data: injections }, { data: profile }] = await Promise.all([
-        supabase.from("injections").select("injected_at").eq("user_id", user.id)
-          .order("injected_at", { ascending: false }).limit(1),
-        supabase.from("user_profiles").select("subscription_tier").eq("id", user.id).single(),
-      ]);
+      const { data: injections } = await supabase.from("injections").select("injected_at")
+        .eq("user_id", user.id).order("injected_at", { ascending: false }).limit(1);
 
       if (injections?.[0]) {
         const day = differenceInDays(new Date(), new Date(injections[0].injected_at)) + 1;
         setCycleDay(Math.min(day, 7));
-      }
-
-      if (profile?.subscription_tier === "pro") {
-        setIsPro(true);
       }
 
       setInitLoading(false);
@@ -58,11 +47,8 @@ export default function CoachPage() {
     const userMessage = input.trim();
     setInput("");
 
-    if (!isPro && messageCount >= FREE_MESSAGE_LIMIT) return;
-
     const newMessages: Message[] = [...messages, { role: "user", content: userMessage }];
     setMessages(newMessages);
-    setMessageCount((c) => c + 1);
     setLoading(true);
 
     try {
@@ -102,8 +88,6 @@ export default function CoachPage() {
     }
   };
 
-  const showProWall = !isPro && messageCount >= FREE_MESSAGE_LIMIT;
-
   if (initLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -127,11 +111,6 @@ export default function CoachPage() {
             </p>
           )}
         </div>
-        {!isPro && (
-          <div className="ml-auto bg-orange-50 text-orange-600 text-xs font-medium px-3 py-1 rounded-full">
-            {FREE_MESSAGE_LIMIT - messageCount} berichten over
-          </div>
-        )}
       </div>
 
       {/* Messages */}
@@ -205,28 +184,8 @@ export default function CoachPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Pro Wall Overlay */}
-      {showProWall && (
-        <div className="bg-white border-t border-green-100 rounded-t-2xl p-6 text-center shadow-lg">
-          <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <Lock className="w-5 h-5 text-orange-500" />
-          </div>
-          <p className="font-semibold text-green-800 mb-1">Pro nodig voor meer coaching</p>
-          <p className="text-sm text-green-600 mb-4">
-            Met Pro heb je onbeperkt toegang tot je persoonlijke AI coach.
-          </p>
-          <a
-            href="/settings"
-            className="btn-primary text-sm py-2.5 px-6 inline-flex"
-          >
-            Upgrade naar Pro — €12,99/maand
-          </a>
-        </div>
-      )}
-
       {/* Input */}
-      {!showProWall && (
-        <div className="border-t border-green-100 pt-4 flex gap-2 shrink-0">
+      <div className="border-t border-green-100 pt-4 flex gap-2 shrink-0">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -248,7 +207,6 @@ export default function CoachPage() {
             )}
           </button>
         </div>
-      )}
     </div>
   );
 }
