@@ -62,13 +62,13 @@ export default async function DashboardLayout({
               👋 {shortEmail}
             </span>
             <form action="/api/auth/signout" method="post">
-              <Link
-                href="/api/auth/signout"
+              <button
+                type="submit"
                 className="flex items-center gap-1.5 text-sm text-green-600 hover:text-green-800 px-3 py-1.5 rounded-lg hover:bg-green-50 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="hidden sm:block">Uitloggen</span>
-              </Link>
+              </button>
             </form>
           </div>
         </div>
