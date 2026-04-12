@@ -10,6 +10,8 @@ import {
   Brain,
   ChevronRight,
   Droplets,
+  AlertCircle,
+  TrendingDown,
 } from "lucide-react";
 
 function getCycleInfo(cycleDay: number) {
@@ -52,7 +54,7 @@ export default async function DashboardPage() {
 
   if (!user) redirect("/login");
 
-  // Fetch profile, last injection, weight logs
+  // Fetch profile, last injection, weight logs (more entries for plateau detection)
   const [{ data: profile }, { data: injections }, { data: weights }] =
     await Promise.all([
       supabase.from("user_profiles").select("*").eq("id", user.id).single(),
@@ -67,7 +69,7 @@ export default async function DashboardPage() {
         .select("*")
         .eq("user_id", user.id)
         .order("logged_at", { ascending: false })
-        .limit(5),
+        .limit(10),
     ]);
 
   const lastInjection = injections?.[0];
@@ -78,22 +80,73 @@ export default async function DashboardPage() {
     ? differenceInDays(new Date(), new Date(lastInjection.injected_at)) + 1
     : null;
 
-  const nextInjectionDays = lastInjection
+  const daysUntilInjection = lastInjection
     ? 7 - differenceInDays(new Date(), new Date(lastInjection.injected_at))
     : null;
 
-  const cycleInfo = cycleDay ? getCycleInfo(cycleDay) : null;
+  const cycleInfo = cycleDay ? getCycleInfo(Math.min(cycleDay, 7)) : null;
 
   const greeting = getGreeting();
   const username = profile?.email?.split("@")[0] || "daar";
 
-  const weightLost =
+  const weightDelta =
     profile?.start_weight_kg && lastWeight
-      ? (profile.start_weight_kg - lastWeight.weight_kg).toFixed(1)
+      ? profile.start_weight_kg - lastWeight.weight_kg
       : null;
+
+  const weightLost = weightDelta !== null ? weightDelta.toFixed(1) : null;
+
+  // Plateau detection: last 3+ entries with < 0.5kg delta
+  let plateauDetected = false;
+  if (weights && weights.length >= 3) {
+    const recent = weights.slice(0, 3).map((w) => w.weight_kg);
+    const delta = Math.abs(recent[0] - recent[recent.length - 1]);
+    if (delta < 0.5) plateauDetected = true;
+  }
+
+  // Coach tip context
+  const coachTip = plateauDetected
+    ? "Plateau gedetecteerd — vraag de coach wat je kunt doen"
+    : cycleDay
+    ? `Dag ${Math.min(cycleDay, 7)}: vraag wat het beste past bij jouw cyclus`
+    : "Start een gesprek met je coach";
 
   return (
     <div className="space-y-5">
+      {/* Injection reminder — urgent alert */}
+      {daysUntilInjection !== null && daysUntilInjection <= 1 && (
+        <div className="bg-orange-50 border-2 border-orange-300 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-orange-500 shrink-0" />
+            <div>
+              <div className="font-semibold text-orange-800 text-sm">
+                {daysUntilInjection <= 0 ? "Injectie vandaag!" : "Injectie morgen"}
+              </div>
+              <div className="text-xs text-orange-600">Vergeet hem niet te loggen na het zetten.</div>
+            </div>
+          </div>
+          <Link href="/inject" className="btn-primary text-xs py-1.5 px-3 shrink-0">
+            Log nu
+          </Link>
+        </div>
+      )}
+
+      {/* Plateau alert */}
+      {plateauDetected && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <TrendingDown className="w-5 h-5 text-blue-500 shrink-0" />
+            <div>
+              <div className="font-semibold text-blue-800 text-sm">Plateau gesignaleerd</div>
+              <div className="text-xs text-blue-600">Je gewicht is de laatste metingen nauwelijks veranderd.</div>
+            </div>
+          </div>
+          <Link href="/coach" className="text-xs text-blue-600 hover:text-blue-800 font-medium shrink-0">
+            Vraag coach
+          </Link>
+        </div>
+      )}
+
       {/* Greeting */}
       <div>
         <h1 className="text-2xl font-bold text-green-800">
@@ -110,7 +163,7 @@ export default async function DashboardPage() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="text-xl">{cycleInfo.emoji}</span>
-              <span className="font-bold text-lg">Dag {cycleDay} van je cyclus</span>
+              <span className="font-bold text-lg">Dag {Math.min(cycleDay, 7)} van je cyclus</span>
             </div>
             <span className="text-sm font-medium opacity-75">{cycleInfo.label}</span>
           </div>
@@ -141,24 +194,26 @@ export default async function DashboardPage() {
 
         <div className="card text-center">
           <div className="text-2xl font-bold text-orange-500">
-            {nextInjectionDays !== null && nextInjectionDays > 0
-              ? nextInjectionDays
-              : nextInjectionDays === 0
+            {daysUntilInjection !== null && daysUntilInjection > 0
+              ? daysUntilInjection
+              : daysUntilInjection === 0
               ? "vandaag"
               : "—"}
           </div>
           <div className="text-xs text-green-500 mt-0.5">
-            {nextInjectionDays === 0 ? "" : "dagen"}
+            {daysUntilInjection === 0 ? "" : "dagen"}
           </div>
           <div className="text-xs font-medium text-green-700 mt-1">Volgende injectie</div>
         </div>
 
         <div className="card text-center">
           <div className="text-2xl font-bold text-green-800">
-            {weightLost ? `${Number(weightLost) > 0 ? "-" : ""}${weightLost}` : "—"}
+            {weightLost
+              ? `${Number(weightLost) > 0 ? "-" : "+"}${Math.abs(Number(weightLost))}`
+              : "—"}
           </div>
           <div className="text-xs text-green-500 mt-0.5">
-            {weightLost ? "kg verloren" : "geen data"}
+            {weightLost ? "kg" : "geen data"}
           </div>
           <div className="text-xs font-medium text-green-700 mt-1">Gewicht</div>
         </div>
@@ -197,12 +252,8 @@ export default async function DashboardPage() {
               <Brain className="w-5 h-5 text-orange-500" />
             </div>
             <div>
-              <div className="font-semibold text-green-800 text-sm">AI Coach tip voor vandaag</div>
-              <div className="text-xs text-green-600 mt-0.5">
-                {cycleDay
-                  ? `Dag ${cycleDay}: vraag wat het beste past bij jouw cyclus`
-                  : "Start een gesprek met je coach"}
-              </div>
+              <div className="font-semibold text-green-800 text-sm">GLP Coach</div>
+              <div className="text-xs text-green-600 mt-0.5">{coachTip}</div>
             </div>
           </div>
           <ChevronRight className="w-4 h-4 text-green-400 group-hover:text-orange-500 transition-colors" />
@@ -233,9 +284,9 @@ export default async function DashboardPage() {
           <div className="flex items-end gap-2">
             <span className="text-3xl font-bold text-green-800">{lastWeight.weight_kg}</span>
             <span className="text-green-600 mb-1">kg</span>
-            {weightLost && Number(weightLost) > 0 && (
-              <span className="text-sm text-green-500 mb-1 ml-2">
-                (-{weightLost} kg totaal)
+            {weightLost && (
+              <span className={`text-sm mb-1 ml-2 ${Number(weightLost) > 0 ? "text-green-500" : "text-orange-500"}`}>
+                ({Number(weightLost) > 0 ? "-" : "+"}{Math.abs(Number(weightLost))} kg totaal)
               </span>
             )}
           </div>
@@ -243,6 +294,13 @@ export default async function DashboardPage() {
             Gemeten op {format(new Date(lastWeight.logged_at), "d MMM", { locale: nl })}
           </p>
         </div>
+      )}
+
+      {/* First weight reference */}
+      {firstWeight && firstWeight !== lastWeight && (
+        <p className="text-xs text-green-400 text-center">
+          Startgewicht: {firstWeight.weight_kg}kg op {format(new Date(firstWeight.logged_at), "d MMM yyyy", { locale: nl })}
+        </p>
       )}
     </div>
   );

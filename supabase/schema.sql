@@ -12,6 +12,7 @@ CREATE TABLE user_profiles (
   start_weight_kg DECIMAL(5,2),
   subscription_tier TEXT NOT NULL DEFAULT 'free',
   onboarding_completed BOOLEAN NOT NULL DEFAULT false,
+  goal TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -125,3 +126,17 @@ CREATE INDEX idx_meals_logged_at ON meals(logged_at DESC);
 CREATE INDEX idx_weight_logs_user_id ON weight_logs(user_id);
 CREATE INDEX idx_weight_logs_logged_at ON weight_logs(logged_at DESC);
 CREATE INDEX idx_daily_checkins_user_date ON daily_checkins(user_id, date DESC);
+
+-- Coach messages table (persistent chat history)
+CREATE TABLE coach_messages (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES user_profiles(id) ON DELETE CASCADE NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE coach_messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users own coach_messages" ON coach_messages FOR ALL USING (auth.uid() = user_id);
+CREATE INDEX idx_coach_messages_user_id ON coach_messages(user_id);
+CREATE INDEX idx_coach_messages_created_at ON coach_messages(created_at DESC);

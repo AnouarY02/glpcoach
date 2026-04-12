@@ -28,12 +28,28 @@ export default function CoachPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: injections } = await supabase.from("injections").select("injected_at")
-        .eq("user_id", user.id).order("injected_at", { ascending: false }).limit(1);
+      const [{ data: injections }, { data: history }] = await Promise.all([
+        supabase
+          .from("injections")
+          .select("injected_at")
+          .eq("user_id", user.id)
+          .order("injected_at", { ascending: false })
+          .limit(1),
+        supabase
+          .from("coach_messages")
+          .select("role, content")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: true })
+          .limit(40),
+      ]);
 
       if (injections?.[0]) {
         const day = differenceInDays(new Date(), new Date(injections[0].injected_at)) + 1;
         setCycleDay(Math.min(day, 7));
+      }
+
+      if (history && history.length > 0) {
+        setMessages(history as Message[]);
       }
 
       setInitLoading(false);
@@ -102,7 +118,7 @@ export default function CoachPage() {
       <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 flex items-start gap-2 mb-3 shrink-0">
         <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
         <p className="text-xs text-amber-800 leading-snug">
-          <span className="font-semibold">Geen medisch hulpmiddel.</span> Dit is een tracking-assistent — geen arts, geen diagnose, geen medisch advies. Raadpleeg altijd je arts of apotheker voor medische vragen.
+          <span className="font-semibold">Geen medisch hulpmiddel.</span> GLP Coach geeft informatie — geen diagnose, geen dosisadvies. Ga altijd naar je arts voor medische beslissingen.
         </p>
       </div>
 
@@ -112,10 +128,10 @@ export default function CoachPage() {
           <Brain className="w-5 h-5 text-orange-500" />
         </div>
         <div>
-          <h1 className="font-bold text-green-800">Tracking Assistent</h1>
+          <h1 className="font-bold text-green-800">GLP Coach</h1>
           {cycleDay && (
             <p className="text-xs text-green-600">
-              Je bent op dag {cycleDay} van je cyclus
+              Dag {cycleDay} van je cyclus
             </p>
           )}
         </div>
@@ -126,22 +142,23 @@ export default function CoachPage() {
         {messages.length === 0 && (
           <div className="text-center py-10">
             <div className="text-4xl mb-3">🌱</div>
-            <p className="text-green-700 font-medium">Hoi! Ik ben je GLP-1 coach.</p>
+            <p className="text-green-700 font-medium">Hoi! Ik ben je GLP Coach.</p>
             <p className="text-green-500 text-sm mt-1 max-w-xs mx-auto">
-              Stel me gerust je vragen over bijwerkingen, voeding, of hoe je je voelt.
+              Stel me je vragen over GLP-1 — bijwerkingen, plateaus, of wat er allemaal verandert.
             </p>
             <div className="mt-6 space-y-2">
               {[
-                "Waarom ben ik misselijk na mijn injectie?",
-                "Wat moet ik eten op dag 2 van mijn cyclus?",
-                "Is het normaal dat ik meer honger heb nu?",
+                "Wat is food noise en is het normaal dat het weg is?",
+                "Ik zit al 3 weken op hetzelfde gewicht — wat nu?",
+                "Ik ben misselijk na mijn injectie, hoe lang duurt dit?",
+                "Wat gebeurt er als ik stop met de medicatie?",
               ].map((suggestion) => (
                 <button
                   key={suggestion}
                   onClick={() => setInput(suggestion)}
                   className="block w-full text-left text-sm bg-green-50 hover:bg-green-100 text-green-700 px-4 py-2.5 rounded-xl transition-colors"
                 >
-                  "{suggestion}"
+                  &ldquo;{suggestion}&rdquo;
                 </button>
               ))}
             </div>
@@ -194,27 +211,27 @@ export default function CoachPage() {
 
       {/* Input */}
       <div className="border-t border-green-100 pt-4 flex gap-2 shrink-0">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Stel een vraag aan je coach..."
-            className="input-field flex-1 resize-none text-sm"
-            rows={1}
-            disabled={loading}
-          />
-          <button
-            onClick={sendMessage}
-            disabled={!input.trim() || loading}
-            className="w-10 h-10 bg-green-600 hover:bg-green-700 disabled:bg-green-200 text-white rounded-xl flex items-center justify-center transition-colors shrink-0 self-end"
-          >
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-          </button>
-        </div>
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Stel een vraag aan je coach..."
+          className="input-field flex-1 resize-none text-sm"
+          rows={1}
+          disabled={loading}
+        />
+        <button
+          onClick={sendMessage}
+          disabled={!input.trim() || loading}
+          className="w-10 h-10 bg-green-600 hover:bg-green-700 disabled:bg-green-200 text-white rounded-xl flex items-center justify-center transition-colors shrink-0 self-end"
+        >
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
+        </button>
+      </div>
     </div>
   );
 }
