@@ -13,6 +13,13 @@ const MEDICATIONS: { value: MedicationType; label: string }[] = [
   { value: "zepbound", label: "Zepbound" },
 ];
 
+const GOALS = [
+  { value: "afvallen", label: "⚖️ Afvallen" },
+  { value: "bijwerkingen", label: "💊 Bijwerkingen managen" },
+  { value: "arts", label: "👨‍⚕️ Rapport voor arts" },
+  { value: "alles", label: "📊 Alles bijhouden" },
+];
+
 const DAYS = [
   { value: 0, label: "Zondag" },
   { value: 1, label: "Maandag" },
@@ -32,6 +39,7 @@ function SettingsContent() {
   const [medication, setMedication] = useState<MedicationType>("ozempic");
   const [doseMg, setDoseMg] = useState(0.5);
   const [injectionDay, setInjectionDay] = useState(1);
+  const [goal, setGoal] = useState("alles");
   const [subscriptionTier, setSubscriptionTier] = useState("free");
 
   const [saving, setSaving] = useState(false);
@@ -65,6 +73,7 @@ function SettingsContent() {
       setMedication(profile.medication_type || "ozempic");
       setDoseMg(profile.dose_mg || 0.5);
       setInjectionDay(profile.injection_day ?? 1);
+      setGoal(profile.goal || "alles");
       setSubscriptionTier(profile.subscription_tier || "free");
     }
     setLoading(false);
@@ -86,7 +95,7 @@ function SettingsContent() {
 
       const { error } = await supabase
         .from("user_profiles")
-        .update({ medication_type: medication, dose_mg: doseMg, injection_day: injectionDay })
+        .update({ medication_type: medication, dose_mg: doseMg, injection_day: injectionDay, goal })
         .eq("id", user.id);
 
       if (error) throw error;
@@ -184,6 +193,26 @@ function SettingsContent() {
       {/* Medication settings */}
       <form onSubmit={handleSaveProfile} className="card space-y-5">
         <h2 className="font-semibold text-green-800">Medicatie profiel</h2>
+
+        <div>
+          <label className="label">Jouw doel</label>
+          <div className="grid grid-cols-2 gap-2">
+            {GOALS.map((g) => (
+              <button
+                key={g.value}
+                type="button"
+                onClick={() => setGoal(g.value)}
+                className={`px-4 py-2.5 rounded-xl border-2 text-sm font-medium transition-all text-left ${
+                  goal === g.value
+                    ? "border-orange-500 bg-orange-50 text-orange-700"
+                    : "border-green-100 hover:border-green-300 text-green-600 bg-white"
+                }`}
+              >
+                {g.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div>
           <label className="label">Medicijn</label>
