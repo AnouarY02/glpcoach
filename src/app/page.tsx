@@ -49,7 +49,7 @@ export default function LandingPage() {
           <span className="text-orange-500">als je weet wat je doet</span>
         </h1>
         <p className="text-lg md:text-xl text-green-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-          AI coach die jouw gebruik begrijpt. Bijwerkingen bijhouden, plateaus doorbreken, en altijd precies weten wat er speelt — voor jou én je arts.
+          AI coach die jouw gebruik begrijpt. Bijwerkingen bijhouden, plateaus begrijpen, en altijd precies weten wat er speelt — voor jou én je arts.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/register" className="btn-primary text-base px-8 py-4">
@@ -74,12 +74,12 @@ export default function LandingPage() {
               {
                 icon: <Brain className="w-8 h-8 text-orange-500" />,
                 title: "Food noise verdwijnt — maar niemand vertelt je wat dan",
-                desc: "Ineens ben je niet meer obsessief aan het nadenken over eten. Wat betekent dat? GLP Coach legt het uit in jouw context.",
+                desc: "Ineens ben je niet meer obsessief aan het nadenken over eten. GLP Coach legt uit waarom dat gebeurt en wat je ervan kunt verwachten.",
               },
               {
                 icon: <BarChart2 className="w-8 h-8 text-green-600" />,
                 title: "Plateau na 3 maanden — je weegt al weken hetzelfde",
-                desc: "Normaal fenomeen, maar frustrerend. De app signaleert het automatisch en de coach weet precies wat er aan de hand is.",
+                desc: "Normaal fenomeen, maar frustrerend. De app signaleert het automatisch en de coach legt uit wat er biologisch gebeurt.",
               },
               {
                 icon: <AlertCircle className="w-8 h-8 text-orange-500" />,
@@ -242,7 +242,7 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-1 text-slate-400 text-xs max-w-sm text-center">
             <Shield className="w-3.5 h-3.5 shrink-0" />
-            <span>GlpCoach is een tracking en organisatie app. Wij geven geen medisch advies. Raadpleeg altijd je arts of zorgverlener voor medische vragen.</span>
+            <span>GlpCoach geeft informatie over GLP-1, geen medisch advies. Dosering en behandelbeslissingen zijn altijd voor je arts.</span>
           </div>
           <p className="text-green-500 text-sm">© 2025 GlpCoach</p>
         </div>
